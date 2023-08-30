@@ -1,0 +1,180 @@
+FileVersion = 1
+LastConfig = "Debug"
+LastPlatform = "Win64"
+RecentFilesList = ["d:\\dev\\vim\\vim.c", "d:\\dev\\vim\\util.c", "d:\\dev\\vim\\keys.c", "d:\\dev\\vim\\motions.c", "d:\\dev\\vim\\font.c", "d:\\dev\\vim\\motions.cpp", "d:\\dev\\vim\\util.cpp", "d:\\dev\\vim\\font.cpp", "d:\\dev\\vim\\vim.cpp", "d:\\dev\\vim\\keys.cpp"]
+
+[MainWindow]
+X = 0
+Y = 37
+Width = 1801
+Height = 894
+ShowKind = "Normal"
+
+[MainDockingFrame]
+Type = "DockingFrame"
+SplitType = 1
+
+[[MainDockingFrame.DockedWidgets]]
+IsFillWidget = true
+Permanent = true
+RequestedWidth = 150.0
+RequestedHeight = 150.0
+SizePriority = 1.0
+DefaultDocumentsTabbedView = true
+Type = "TabbedView"
+
+[[MainDockingFrame.DockedWidgets.Tabs]]
+TabLabel = "keys.c"
+TabWidth = 63.08271
+Type = "SourceViewPanel"
+FilePath = "d:\\dev\\vim\\keys.c"
+CursorPos = 4988
+VertPos = 1826.0
+
+[[MainDockingFrame.DockedWidgets.Tabs]]
+TabLabel = "font.c"
+TabWidth = 62.33083
+Type = "SourceViewPanel"
+FilePath = "d:\\dev\\vim\\font.c"
+CursorPos = 1258
+
+[[MainDockingFrame.DockedWidgets.Tabs]]
+Active = true
+TabLabel = "vim.c"
+TabWidth = 59.32331
+Type = "SourceViewPanel"
+FilePath = "d:\\dev\\vim\\vim.c"
+CursorPos = 11558
+VertPos = 8778.0
+
+[[MainDockingFrame.DockedWidgets.Tabs]]
+TabLabel = "util.c"
+TabWidth = 57.06767
+Type = "SourceViewPanel"
+FilePath = "d:\\dev\\vim\\util.c"
+CursorPos = 5678
+
+[[MainDockingFrame.DockedWidgets.Tabs]]
+TabLabel = "motions.c"
+TabWidth = 85.6391
+Type = "SourceViewPanel"
+FilePath = "d:\\dev\\vim\\motions.c"
+CursorPos = 757
+
+[[MainDockingFrame.DockedWidgets]]
+RequestedWidth = 833.0
+RequestedHeight = 152.0
+Type = "DockingFrame"
+SplitType = 2
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets]]
+RequestedWidth = 679.0
+RequestedHeight = 152.0
+SizePriority = 0.5801603
+Type = "TabbedView"
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+Active = true
+TabLabel = "Output"
+TabWidth = 91.35338
+Type = "OutputPanel"
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+TabLabel = "Watch"
+TabWidth = 86.8421
+Type = "WatchPanel"
+Columns = [{Width = 231.0}, {Width = 682.0}, {Width = 227.0}]
+Items = ["vim.lines[i]", ""]
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+TabLabel = "Auto"
+TabWidth = 77.81955
+Type = "AutoWatchPanel"
+Columns = [{Width = 227.0}, {Width = 274.0}, {Width = 227.0}]
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+TabLabel = "Memory"
+TabWidth = 97.36842
+Type = "MemoryPanel"
+AutoResize = "Auto_Mul8"
+RequestedWidth = 198.0
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets]]
+RequestedWidth = 448.68
+RequestedHeight = 152.0
+SizePriority = 0.4198397
+Type = "TabbedView"
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+TabLabel = "Threads"
+TabWidth = 95.11278
+Type = "ThreadPanel"
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+TabLabel = "Call Stack"
+TabWidth = 104.8872
+Type = "CallStackPanel"
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+TabLabel = "Immediate"
+TabWidth = 111.6541
+Type = "ImmediatePanel"
+
+[[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+Active = true
+TabLabel = "Breakpoints"
+TabWidth = 116.9173
+Type = "BreakpointPanel"
+
+[[BookmarkFolders]]
+Title = ""
+
+[DebugSession]
+FileVersion = 1
+Dependencies = {}
+
+[DebugSession.Project]
+Name = "Debug Session"
+TargetType = "CustomBuild"
+StartupObject = "Program"
+DefaultNamespace = ""
+
+[DebugSession.Configs.Debug.Win32]
+TargetName = ""
+BuildCommandsOnRun = "Never"
+DebugWorkingDirectory = ""
+
+[DebugSession.Configs.Debug.Win64]
+TargetName = "d:\\dev\\vim\\vim.exe"
+BuildCommandsOnRun = "Never"
+DebugWorkingDirectory = ""
+
+[DebugSession.Configs.Release.Win32]
+TargetName = ""
+BuildCommandsOnRun = "Never"
+DebugWorkingDirectory = ""
+
+[DebugSession.Configs.Release.Win64]
+TargetName = ""
+BuildCommandsOnRun = "Never"
+DebugWorkingDirectory = ""
+
+[DebugSession.Configs.Paranoid.Win32]
+TargetName = ""
+BuildCommandsOnRun = "Never"
+DebugWorkingDirectory = ""
+
+[DebugSession.Configs.Paranoid.Win64]
+TargetName = ""
+BuildCommandsOnRun = "Never"
+DebugWorkingDirectory = ""
+
+[DebugSession.Configs.Test.Win32]
+TargetName = ""
+BuildCommandsOnRun = "Never"
+DebugWorkingDirectory = ""
+
+[DebugSession.Configs.Test.Win64]
+TargetName = ""
+BuildCommandsOnRun = "Never"
+DebugWorkingDirectory = ""
