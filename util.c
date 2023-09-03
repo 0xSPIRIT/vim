@@ -36,7 +36,8 @@ void *memset(void *dest, int ch, u64 count) {
 #pragma function(strlen)
 u64 strlen(const char *string) {
     u64 result = 0;
-    while (string[result]) result++;
+    while (string[result])
+        result++;
     return result;
 }
 
@@ -45,9 +46,9 @@ u64 strlen(const char *string) {
 HANDLE process_heap = 0;
 void heap_init() { process_heap = GetProcessHeap(); }
 
-#define allocate(x) HeapAlloc(process_heap, HEAP_ZERO_MEMORY, x)
+#define allocate(x)            HeapAlloc(process_heap, HEAP_ZERO_MEMORY, x)
 #define reallocate(x, newsize) HeapReAlloc(process_heap, HEAP_ZERO_MEMORY, x, newsize)
-#define deallocate(x) HeapFree(process_heap, 0, x)
+#define deallocate(x)          HeapFree(process_heap, 0, x)
 
 // Strings, not null-terminated.
 
@@ -88,7 +89,7 @@ void string_clear(String *str) {
 
 String as_string(char *str) {
     u64 len = strlen(str);
-    return (String){str, len, len};
+    return (String){str, len, len}; // Use len as the capacity as we don't store the '\0'
 }
 
 bool string_compare(String a, String b) {
@@ -101,7 +102,9 @@ bool string_compare(String a, String b) {
 }
 
 void string_copy(String *dst, String src) {
+    if (!dst->buffer) return;
     if (!src.buffer) return;
+    
     while (dst->capacity < src.length) string_reallocate(dst);
     
     for (u64 i = 0; i < src.length; i++) {
@@ -250,8 +253,6 @@ String read_file(File file) {
     u32 file_size = GetFileSize(file.handle, nullptr);
     String result = make_string(file_size);
     
-    static_assert(sizeof(DWORD) == sizeof(u32), "sdf");
-    
     DWORD bytes_read = 0;
     bool ok = (bool)ReadFile(file.handle, result.buffer, file_size, &bytes_read, nullptr);
     assert(ok);
@@ -315,7 +316,9 @@ inline bool win32_SetProcessDpiAware(void) {
     return ret;
 }
 
-void get_command_line_args(int * argc, char *** argv) {
+void get_command_line_args(int *argc, char ***argv) {
+    if (!argc || !argv) return;
+    
     // Get the command line arguments as wchar_t strings
     wchar_t ** wargv = CommandLineToArgvW( GetCommandLineW(), argc );
     if (!wargv) { *argc = 0; *argv = nullptr; return; }

@@ -13,10 +13,12 @@ void vim_handle_keypress(Vim_Instance *vim, SDL_Keycode key, u16 mod) {
     }
     
     if (vim->mode == VIM_NORMAL || vim->mode == VIM_VISUAL || vim->mode == VIM_CHANGE) {
-        if (key == SDLK_h || key == SDLK_LEFT)  vim_left(vim);
-        if (key == SDLK_l || key == SDLK_RIGHT) vim_right(vim);
-        if (key == SDLK_k || key == SDLK_UP)    vim_up(vim);
-        if (key == SDLK_j || key == SDLK_DOWN)  vim_down(vim);
+        if (key == SDLK_j && shift) vim_concatenate_lines(vim);
+        
+        else if (key == SDLK_h || key == SDLK_LEFT)  vim_left(vim);
+        else if (key == SDLK_l || key == SDLK_RIGHT) vim_right(vim);
+        else if (key == SDLK_k || key == SDLK_UP)    vim_up(vim);
+        else if (key == SDLK_j || key == SDLK_DOWN)  vim_down(vim);
         
         if (key == SDLK_0)          vim_start_of_line(vim);
         if (shift && key == SDLK_4) vim_end_of_line(vim);

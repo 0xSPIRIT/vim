@@ -67,7 +67,7 @@ bool vim_is_line_empty(String line) {
         if (line.buffer[i] != ' ') return false;
     }
     
-    return false;
+    return true;
 }
 
 void vim_move_down_to_empty_line(Vim_Instance *vim) {
@@ -175,6 +175,14 @@ void vim_backspace(Vim_Instance *vim) {
             vim->x = (int)vim->lines[vim->y].length;
         }
     }
+}
+
+void vim_concatenate_lines(Vim_Instance *vim) {
+    if (vim->line_count == 1) return;
+    
+    vim_down(vim);
+    vim_start_of_line(vim);
+    vim_backspace(vim);
 }
 
 void vim_insert_mode_newline_after(Vim_Instance *vim) {

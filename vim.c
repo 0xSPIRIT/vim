@@ -81,6 +81,7 @@ void vim_init_lines(Vim_Instance *vim) {
     vim->line_count = 1;
     vim->line_capacity = 64;
     vim->lines = (String*)allocate(vim->line_capacity * sizeof(String));
+    vim->x = vim->y = 0;
     
     for (int i = 0; i < vim->line_capacity; i++) {
         vim_init_line(&vim->lines[i]);
@@ -90,8 +91,14 @@ void vim_init_lines(Vim_Instance *vim) {
 }
 
 void vim_reallocate_lines(Vim_Instance *vim) {
+    u64 prev_index = vim->line_capacity;
+    
     vim->line_capacity *= 2;
     vim->lines = (String*)reallocate(vim->lines, vim->line_capacity * sizeof(String));
+    
+    for (u64 i = prev_index; i < vim->line_capacity; i++) {
+        vim_init_line(&vim->lines[i]);
+    }
 }
 
 void vim_type_char(Vim_Instance *vim, char ch) {
@@ -177,10 +184,10 @@ void vim_execute_command(Vim_Instance *vim) {
     if (string_compare(vim->command_line, cs(":q"))) {
         vim->closed = true;
     } else if (string_compare(vim->command_line, cs(":w"))) {
-        vim_write_lines_to_file(cs("out.txt"), vim->lines, vim->line_count);
+        vim_write_lines_to_file(vim->filename, vim->lines, vim->line_count);
         string_copy(&vim->command_line, cs("Successfuly written to out.txt"));
     } else if (string_compare(vim->command_line, cs(":wq"))) {
-        vim_write_lines_to_file(cs("out.txt"), vim->lines, vim->line_count);
+        vim_write_lines_to_file(vim->filename, vim->lines, vim->line_count);
         vim->closed = true;
     }
 }
