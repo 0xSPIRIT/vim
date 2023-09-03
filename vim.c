@@ -160,6 +160,10 @@ void vim_type_string(Vim_Instance *vim, String str) {
 
 u64 vim_read_file_to_lines(String filename, Vim_Instance *vim) {
     File file = open_file(filename, FILE_READ);
+    if (file.invalid) {
+        return 0;
+    }
+    
     String string = read_file(file);
     close_file(file);
 
@@ -358,8 +362,21 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     
     vim->w = vim->h = 400;
     
-    vim->argc = argc;
-    vim->argv = argv;
+    //vim->argc = argc;
+    //vim->argv = argv;
+    
+    String filename = {0};
+    
+    if (argc == 2) {
+        filename = as_string(argv[1]);
+        if (!file_exists(filename)) {
+            // TODO: Output error: file not found
+            ExitProcess(1);
+        }
+    } else {
+        // TODO: Output usage using MessageBox?
+        ExitProcess(1);
+    }
     
     vim->window = SDL_CreateWindow("vim",
                                    SDL_WINDOWPOS_CENTERED,
@@ -372,10 +389,9 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     SDL_RenderSetLogicalSize(vim->renderer, vim->w, vim->h);
     
     vim->font = make_font(vim->renderer, "font.png", 8, 13);
-    vim->filename = cs("out.txt");
+    vim->filename = filename;
     
     vim_init_lines(vim);
-    
     vim_read_file_to_lines(vim->filename, vim);
 }
 
@@ -457,10 +473,18 @@ void main() {
     Vim_Instance vim = {0};
     
     win32_SetProcessDpiAware();
-    stdout_init();
     heap_init();
+    stdout_init();
     
-    vim_init(&vim, 0, nullptr);
+    char cwd[MAX_PATH];
+    
+    GetCurrentDirectory(MAX_PATH, cwd);
+    
+    int argc;
+    char **argv;
+    get_command_line_args(&argc, &argv);
+    
+    vim_init(&vim, argc, argv);
     
     while (!vim.closed) {
         SDL_Event event;

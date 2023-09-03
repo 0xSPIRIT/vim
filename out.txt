@@ -1,16 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#define shstr(str) {str, sizeof(str)-1}
-
-struct Short_String
-{
+struct Short_String {
     char buffer[512];
     u64 length;
 };
 
-int main(void)
-{
+int main(void) {
     int a[10] = {0};
     int count_a = sizeof(a);
 
@@ -25,8 +21,7 @@ int main(void)
     }
 }
 
-int other_function(int x, int y)
-{
+int other_function(int x, int y) {
     if (x == y) return 0;
     return 1;
 }

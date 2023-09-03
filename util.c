@@ -203,6 +203,7 @@ void print(String string) {
 
 typedef struct File {
     HANDLE handle;
+    bool invalid;
 } File;
 
 typedef enum {
@@ -225,9 +226,7 @@ File open_file(String filename, File_Mode mode) {
                              nullptr);
     
     if (file.handle == INVALID_HANDLE_VALUE) {
-        u32 error = GetLastError();
-        (void)error;
-        __debugbreak();
+        file.invalid = true;
     }
     
     return file;
@@ -235,6 +234,16 @@ File open_file(String filename, File_Mode mode) {
 
 void close_file(File file) {
     CloseHandle(file.handle);
+}
+
+bool file_exists(String filename) {
+    DWORD attributes = GetFileAttributes(filename.buffer);
+    
+    const DWORD invalid = INVALID_FILE_ATTRIBUTES;
+    
+    bool exists = (attributes != invalid &&
+                   !(attributes & FILE_ATTRIBUTE_DIRECTORY));
+    return exists;
 }
 
 String read_file(File file) {
@@ -266,7 +275,7 @@ bool write_to_file(File file, String buffer) {
     return ok;
 }
 
-// A stupid windows thing
+// Windows things...
 
 typedef enum PROCESS_DPI_AWARENESS
 {
@@ -280,12 +289,12 @@ typedef HRESULT (WINAPI * SETPROCESSDPIAWARENESS_T)(PROCESS_DPI_AWARENESS);
 
 inline bool win32_SetProcessDpiAware(void) {
     HMODULE shcore = LoadLibraryA("Shcore.dll");
-    SETPROCESSDPIAWARENESS_T SetProcessDpiAwareness = NULL;
+    SETPROCESSDPIAWARENESS_T SetProcessDpiAwareness = nullptr;
     if (shcore) {
         SetProcessDpiAwareness = (SETPROCESSDPIAWARENESS_T) GetProcAddress(shcore, "SetProcessDpiAwareness");
     }
     HMODULE user32 = LoadLibraryA("User32.dll");
-    SETPROCESSDPIAWARE_T SetProcessDPIAware = NULL;
+    SETPROCESSDPIAWARE_T SetProcessDPIAware = nullptr;
     if (user32) {
         SetProcessDPIAware = (SETPROCESSDPIAWARE_T) GetProcAddress(user32, "SetProcessDPIAware");
     }
@@ -304,4 +313,27 @@ inline bool win32_SetProcessDpiAware(void) {
         FreeLibrary(shcore);
     }
     return ret;
+}
+
+void get_command_line_args(int * argc, char *** argv) {
+    // Get the command line arguments as wchar_t strings
+    wchar_t ** wargv = CommandLineToArgvW( GetCommandLineW(), argc );
+    if (!wargv) { *argc = 0; *argv = nullptr; return; }
+    
+    // Count the number of bytes necessary to store the UTF-8 versions of those strings
+    int n = 0;
+    for (int i = 0;  i < *argc;  i++)
+        n += WideCharToMultiByte( CP_UTF8, 0, wargv[i], -1, nullptr, 0, nullptr, nullptr ) + 1;
+    
+    // Allocate the argv[] array + all the UTF-8 strings
+    *argv = allocate( (*argc + 1) * sizeof(char *) + n );
+    if (!*argv) { *argc = 0; return; }
+    
+    // Convert all wargv[] --> argv[]
+    char * arg = (char *)&((*argv)[*argc + 1]);
+    for (int i = 0;  i < *argc;  i++) {
+        (*argv)[i] = arg;
+        arg += WideCharToMultiByte( CP_UTF8, 0, wargv[i], -1, arg, n, nullptr, nullptr ) + 1;
+    }
+    (*argv)[*argc] = nullptr;
 }
