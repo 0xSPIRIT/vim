@@ -21,6 +21,7 @@ typedef struct Vim_Range
 {
     u64 start_x, start_y;
     u64 end_x, end_y;
+    bool line_based;
 } Vim_Range;
 
 typedef struct Vim_Instance
@@ -237,6 +238,8 @@ void vim_execute_command(Vim_Instance *vim) {
         
         vim_read_file_to_lines(vim, new_file);
         
+        string_copy(&vim->filename, new_file);
+        
         free_string(&new_file);
     }
 }
@@ -248,8 +251,8 @@ void vim_center_screen(Vim_Instance *vim) {
     vim->yoff = vim->yoff_to;
 }
 
-bool is_thing_offscreen(int yoff, int thing_y, int screen_h) {
-    return (thing_y < yoff) || (thing_y > yoff+screen_h);
+bool is_thing_offscreen(int yoff, int thing_y, int thing_h, int screen_h) {
+    return (thing_y+thing_h < yoff) || (thing_y > yoff+screen_h);
 }
 
 void vim_set_yoff(Vim_Instance *vim) {
@@ -274,7 +277,11 @@ void vim_draw_cursor(SDL_Renderer *render, Vim_Instance *vim) {
     
     int dy = -vim->yoff;
     
-    SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+    if (vim->mode == VIM_VISUAL) {
+        SDL_SetRenderDrawColor(render, 255, 0, 0, 255);
+    } else {
+        SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+    }
     
     switch (vim->mode) {
         case VIM_NORMAL: case VIM_VISUAL: {
@@ -324,63 +331,71 @@ void vim_draw_selection(SDL_Renderer *render, Vim_Instance *vim) {
     
     int screen_width = vim->w;
     
-    SDL_SetRenderDrawColor(render, 64, 64, 255, 127);
+    SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
     
     for (u64 y = range.start_y; y <= range.end_y; y++) {
         String *line = &vim->lines[y];
         
         SDL_Rect rect = {0};
         
-        u64 chars_offset = 0;
-        u64 length = 0;
+        // View into the string that we draw over the highlight.
+        // The length must be set, and the buffer can be offset
+        String view_into = { line->buffer, 0, line->capacity };
         
-        if (range.start_y == range.end_y) {
-            chars_offset = range.start_x;
-            length = range.end_x - range.start_x + 1;
+        if (range.line_based) {
+            rect.x = 0;
+            rect.y = (int)y*fh;
+            rect.w = vim->w;
+            rect.h = fh;
             
-            rect = (SDL_Rect){
-                (int)range.start_x * fw,
-                (int)y * fh,
-                (int)(range.end_x - range.start_x) * fw,
-                fh
-            };
-        } else if (y == range.start_y) {
-            chars_offset = range.start_x;
-            length = line->length - range.start_x;
-            
-            rect = (SDL_Rect){
-                (int)range.start_x * fw,
-                (int)y * fh,
-                screen_width - (int)range.start_x * fw,
-                fh
-            };
-        } else if (y == range.end_y) {
-            length = range.end_x+1;
-            
-            rect = (SDL_Rect){
-                0,
-                (int)y * fh,
-                (int)range.end_x * fw,
-                fh
-            };
+            view_into.length = line->length;
         } else {
-            length = line->length;
-            
-            rect = (SDL_Rect){
-                0,
-                (int)y * fh,
-                screen_width,
-                fh
-            };
+            if (range.start_y == range.end_y) {
+                view_into.buffer += range.start_x;
+                view_into.length = range.end_x - range.start_x + 1;
+                
+                rect = (SDL_Rect){
+                    (int)range.start_x * fw,
+                    (int)y * fh,
+                    (int)(range.end_x - range.start_x) * fw,
+                    fh
+                };
+            } else if (y == range.start_y) {
+                view_into.buffer += range.start_x;
+                view_into.length = line->length - range.start_x;
+                
+                rect = (SDL_Rect){
+                    (int)range.start_x * fw,
+                    (int)y * fh,
+                    screen_width - (int)range.start_x * fw,
+                    fh
+                };
+            } else if (y == range.end_y) {
+                view_into.length = range.end_x+1;
+                
+                rect = (SDL_Rect){
+                    0,
+                    (int)y * fh,
+                    (int)range.end_x * fw,
+                    fh
+                };
+            } else {
+                view_into.length = line->length;
+                
+                rect = (SDL_Rect){
+                    0,
+                    (int)y * fh,
+                    screen_width,
+                    fh
+                };
+            }
         }
         
         rect.y += dy;
         
-        String view_into = {line->buffer+chars_offset, length, length};
-        
         SDL_RenderFillRect(render, &rect);
         
-        font_draw_string(render, &vim->font, view_into, rect.x, rect.y, (SDL_Color){0,0,0,0});
+        font_draw_string(render, &vim->font, view_into, rect.x, rect.y, (SDL_Color){0,0,0});
     }
 }
 
@@ -404,7 +419,7 @@ void vim_mode(Vim_Instance *vim, Vim_Mode mode) {
         vim->x = 0;
         string_clear(&vim->command_line);
     } else if (mode == VIM_CHANGE) {
-        vim_range_start(vim);
+        vim_range_start(vim, false);
     }
     
     vim_clamp_cursor(vim, mode);
@@ -414,17 +429,17 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
     
-    vim->scale = 2;
+    vim->scale = 1;
     
-    vim->w = vim->h = 400;
+    vim->w = 1000;
+    vim->h = 700;
     
     vim->argc = argc;
     vim->argv = argv;
     
-    String filename = {0};
-    
     if (argc == 2) {
-        filename = as_string(argv[1]);
+        vim->filename = make_string(512);
+        string_copy(&vim->filename, as_string(argv[1]));
     } else {
         print(cs("Usage: vim <file>\n"));
         ExitProcess(1);
@@ -440,8 +455,7 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     
     SDL_RenderSetLogicalSize(vim->renderer, vim->w, vim->h);
     
-    vim->font = make_font(vim->renderer, "font.png", 8, 13);
-    vim->filename = filename;
+    vim->font = make_font(vim->renderer, "consola_atlas.png", 14, 25);
     
     vim_allocate_and_init_lines(vim);
     vim_read_file_to_lines(vim, vim->filename);
@@ -499,7 +513,7 @@ void vim_draw(Vim_Instance *vim) {
     
     int y = -vim->yoff;
     for (int i = 0; i < vim->line_count; i++) {
-        if (!is_thing_offscreen(vim->yoff, y+vim->yoff, vim->h)) {
+        if (!is_thing_offscreen(vim->yoff, y+vim->yoff, vim->font.h, vim->h)) {
             font_draw_string(render, &vim->font, vim->lines[i], 0, y, (SDL_Color){255, 255, 255});
         }
         y += vim->font.h;
@@ -522,7 +536,7 @@ void vim_draw(Vim_Instance *vim) {
 
 int main() {
     Vim_Instance vim = {0};
-    
+   
     win32_SetProcessDpiAware();
     heap_init();
     stdout_init();
@@ -539,10 +553,10 @@ int main() {
     
     while (!vim.closed) {
         SDL_Event event;
-        while (!vim.closed && SDL_WaitEvent(&event)) {
+        while (SDL_PollEvent(&event)) {
             vim_handle_event(&vim, &event);
-            vim_draw(&vim);
         }
+        vim_draw(&vim);
     }
     
     vim_deinit(&vim);

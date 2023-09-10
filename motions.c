@@ -220,54 +220,74 @@ void vim_tab(Vim_Instance *vim) {
 
 ////////////////////////////////////
 
-void vim_delete(Vim_Instance *vim, Vim_Range range) {
+void vim_delete_range_line_based(Vim_Instance *vim, int start_y, int end_y) {
+    if (start_y > end_y) {
+        int temp = start_y;
+        start_y = end_y;
+        end_y = temp;
+    }
+    
+    int count = end_y - start_y + 1;
+    
+    for (int i = 0; i < count; i++)
+        vim_delete_line(vim, start_y);
+}
+
+void vim_delete_range(Vim_Instance *vim, Vim_Range range) {
+    int w = vim->w;
+    
+    if (range.line_based) {
+        vim_delete_range_line_based(vim, (int)range.start_y, (int)range.end_y);
+		return;	
+    }
+    
     range = vim_fix_range(range);
     
-    u64 start_x = range.start_x;
-    u64 start_y = range.start_y;
+    int start_x = (int)range.start_x;
+    int start_y = (int)range.start_y;
+    int end_x   = (int)range.end_x;
+    int end_y   = (int)range.end_y;
     
-    for (u64 y = range.start_y; y <= range.end_y; y++) {
-        String *line = &vim->lines[y];
+    for (int y = end_y; y >= start_y; y--) {
+        int x = 0;
+        if (y == start_y)
+            x = start_x;
         
-        if (range.start_y == range.end_y) {
-            string_delete_range(line, range.start_x, range.end_x);
-        }
+        vim->x = w-1;
+        if (y == end_y) vim->x = end_x;
         
-        else if (y == range.start_y) {
-            if (range.start_x > 0 && range.start_x < line->length) {
-                string_delete_range(line, range.start_x, line->length-1);
-            } else if (range.start_x == 0) {
-                vim_delete_line(vim, y);
-                range.start_y--;
-                range.end_y--;
-                y--;
-            }
-        }
-        
-        else if (y == range.end_y) {
-            string_delete_range(line, 0, range.end_x);
-        }
-        
-        else {
+        if (x == 0 && vim->x == w-1) {
             vim_delete_line(vim, y);
-            range.start_y--;
-            range.end_y--;
-            y--;
+            vim->x = 0;
+            continue;
+        }
+        
+        while (vim->x >= x) {
+            String *line = &vim->lines[y];
+            char ch = line->buffer[vim->x];
+            
+            if (ch) {
+                vim->x++;
+                vim_backspace(vim);
+            }
+            
+            vim->x--;
         }
     }
     
-    vim->x = (int)start_x;
-    vim->y = (int)start_y;
+    vim->x = start_x;
+    vim->y = start_y;
 }
 
 void vim_change(Vim_Instance *vim, Vim_Range range) {
-    vim_delete(vim, range);
+    vim_delete_range(vim, range);
     vim_mode(vim, VIM_INSERT);
 }
 
-void vim_range_start(Vim_Instance *vim) {
+void vim_range_start(Vim_Instance *vim, bool line_based) {
     vim->range.start_x = vim->x;
     vim->range.start_y = vim->y;
+    vim->range.line_based = line_based;
 }
 
 void vim_range_end(Vim_Instance *vim) {
@@ -277,7 +297,7 @@ void vim_range_end(Vim_Instance *vim) {
 
 void vim_change_end_of_line(Vim_Instance *vim) {
     vim_mode(vim, VIM_NORMAL);
-    vim_range_start(vim);
+    vim_range_start(vim, false);
     vim_end_of_line(vim);
     vim_range_end(vim);
     vim_change(vim, vim->range);
@@ -285,8 +305,8 @@ void vim_change_end_of_line(Vim_Instance *vim) {
 
 void vim_delete_end_of_line(Vim_Instance *vim) {
     vim_mode(vim, VIM_NORMAL);
-    vim_range_start(vim);
+    vim_range_start(vim, false);
     vim_end_of_line(vim);
     vim_range_end(vim);
-    vim_delete(vim, vim->range);
+    vim_delete_range(vim, vim->range);
 }

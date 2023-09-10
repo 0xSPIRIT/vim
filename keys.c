@@ -60,7 +60,7 @@ void vim_handle_keypress(Vim_Instance *vim, SDL_Keycode key, u16 mod) {
         if (key == SDLK_v) {
             if (vim->mode == VIM_NORMAL) {
                 vim_mode(vim, VIM_VISUAL);
-                vim_range_start(vim);
+                vim_range_start(vim, shift);
             } else {
                 vim_mode(vim, VIM_NORMAL);
             }
@@ -94,19 +94,12 @@ void vim_handle_keypress(Vim_Instance *vim, SDL_Keycode key, u16 mod) {
             vim_mode(vim, VIM_COMMAND);
         }
         
-        if (key == SDLK_F1) {
-            vim_range_start(vim);
-        }
-        if (key == SDLK_F2) {
-            vim_range_end(vim);
-        }
-        
         if (vim->mode == VIM_VISUAL && key == SDLK_d) {
-            vim_delete(vim, vim->range);
+            vim_delete_range(vim, vim->range);
             vim_mode(vim, VIM_NORMAL);
         }
         
-        if (vim->mode == VIM_NORMAL && key == SDLK_c && !control) {
+        else if (vim->mode == VIM_NORMAL && key == SDLK_c && !control) {
             if (shift) {
                 vim_change_end_of_line(vim);
             } else {
@@ -133,7 +126,7 @@ void vim_handle_keypress(Vim_Instance *vim, SDL_Keycode key, u16 mod) {
             if (vim->should_change) {
                 vim_change(vim, vim->range);
             } else {
-                vim_delete(vim, vim->range);
+                vim_delete_range(vim, vim->range);
                 vim_mode(vim, VIM_NORMAL);
             }
         }

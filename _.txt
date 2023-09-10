@@ -9,7 +9,7 @@ typedef struct {
 } Arena;
 
 Arena make_arena(uint64_t size) {
-    Arena arena;
+    Arena arena = {0};
 
     arena.size = size;
     arena.buffer = calloc(arena.size, 1);
@@ -22,12 +22,18 @@ void free_arena(Arena arena) {
     free(arena.buffer);
 }
 
-void *arena_alloc(Arena *arena, uint64 size) {
+void *arena_alloc(Arena *arena, uint64_t size) {
     if (arena->cursor+size > arena->buffer+arena.size) return 0;
 
     void *ptr = arena->cursor;
     arena->cursor += size;
     return ptr;
+}
+
+void arena_pop(Arena *arena, uint64_t size) {
+    if (arena->cursor - size >= arena->buffer) {
+        arena->cursor -= size;
+    }
 }
 
 int main(void) {
@@ -36,6 +42,8 @@ int main(void) {
     uint64_t buf_size = 64;
     char *buffer = arena_alloc(&arena, buf_size);
     strncpy(buffer, "Hello!", buf_size);
+
+    arena_pop(buf_size);
 
     free_arena(arena);
 }
