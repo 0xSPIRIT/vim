@@ -48,7 +48,7 @@ void heap_init() { process_heap = GetProcessHeap(); }
 
 #define allocate(x)            HeapAlloc(process_heap, HEAP_ZERO_MEMORY, x)
 #define reallocate(x, newsize) HeapReAlloc(process_heap, HEAP_ZERO_MEMORY, x, newsize)
-#define deallocate(x)          HeapFree(process_heap, 0, x)
+#define free(x)                HeapFree(process_heap, 0, x)
 
 // Strings, not null-terminated.
 
@@ -77,6 +77,11 @@ String make_string(u64 capacity) {
     return string;
 }
 
+void free_string(String *str) {
+    free(str->buffer);
+    str->length = str->capacity = 0;
+}
+
 void string_reallocate(String *str) {
     str->capacity *= 2;
     str->buffer = reallocate(str->buffer, str->capacity);
@@ -92,10 +97,35 @@ String as_string(char *str) {
     return (String){str, len, len}; // Use len as the capacity as we don't store the '\0'
 }
 
+// Use this to convert non 0-terminated strings to a 0-terminated C string
+// usually so that you can interface with APIs or whatever
+//
+// It's your job to free the buffer if needed!
+char *as_c_string(String str) {
+    char *result = allocate(str.length+1);
+    
+    for (int i = 0; i < str.length; i++) {
+        result[i] = str.buffer[i];
+    }
+    
+    result[str.length] = 0;
+    
+    return result;
+}
+
 bool string_compare(String a, String b) {
     if (a.length != b.length) return false;
     
     for (u64 i = 0; i < a.length; i++)
+        if (a.buffer[i] != b.buffer[i]) return false;
+    
+    return true;
+}
+
+bool string_starts_with(String a, String b) {
+    if (a.length < b.length) return false;
+    
+    for (u64 i = 0; i < b.length; i++)
         if (a.buffer[i] != b.buffer[i]) return false;
     
     return true;
@@ -114,16 +144,16 @@ void string_copy(String *dst, String src) {
     dst->length = src.length;
 }
 
-String string_slice_duplicate(String src, u64 start, u64 end) {
-    assert(end < src.length);
+String string_slice_duplicate(String src, u64 start_index, u64 end_index) {
+    assert(end_index < src.length);
     
     if (src.length == 0) return (String){0};
     
-    String result = { 0, end-start+1, end-start+1 };
+    String result = { 0, end_index-start_index+1, end_index-start_index+1 };
     result.buffer = (char*)allocate(result.capacity);
     
-    for (u64 i = start; i <= end; i++) {
-        result.buffer[i-start] = src.buffer[i];
+    for (u64 i = start_index; i <= end_index; i++) {
+        result.buffer[i-start_index] = src.buffer[i];
     }
     
     return result;
@@ -204,7 +234,8 @@ void print(String string) {
 
 // File Stuff
 
-typedef struct File {
+typedef struct File
+{
     HANDLE handle;
     bool invalid;
 } File;
@@ -220,13 +251,17 @@ File open_file(String filename, File_Mode mode) {
     u32 desired_access = (mode == FILE_READ) ? GENERIC_READ : GENERIC_WRITE;
     u32 creation = (mode == FILE_READ) ? OPEN_EXISTING : OPEN_ALWAYS;
     
-    file.handle = CreateFile(filename.buffer,
+    char *filename_cstr = as_c_string(filename); // We need the 0-terminator
+    
+    file.handle = CreateFile(filename_cstr,
                              desired_access,
                              0,
                              nullptr,
                              creation,
                              FILE_ATTRIBUTE_NORMAL,
                              nullptr);
+    
+    free(filename_cstr);
     
     if (file.handle == INVALID_HANDLE_VALUE) {
         file.invalid = true;
@@ -240,7 +275,9 @@ void close_file(File file) {
 }
 
 bool file_exists(String filename) {
+    char *filename_cstr = as_c_string(filename);
     DWORD attributes = GetFileAttributes(filename.buffer);
+    free(filename_cstr);
     
     const DWORD invalid = INVALID_FILE_ATTRIBUTES;
     
@@ -254,7 +291,8 @@ String read_file(File file) {
     String result = make_string(file_size);
     
     DWORD bytes_read = 0;
-    bool ok = (bool)ReadFile(file.handle, result.buffer, file_size, &bytes_read, nullptr);
+    
+    int ok = ReadFile(file.handle, result.buffer, file_size, &bytes_read, nullptr);
     assert(ok);
     
     result.length = bytes_read;

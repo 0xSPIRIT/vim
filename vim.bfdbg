@@ -4,11 +4,11 @@ LastPlatform = "Win64"
 RecentFilesList = ["d:\\dev\\vim\\vim.c", "d:\\dev\\vim\\util.c", "d:\\dev\\vim\\keys.c", "d:\\dev\\vim\\motions.c", "d:\\dev\\vim\\font.c", "d:\\dev\\vim\\motions.cpp", "d:\\dev\\vim\\util.cpp", "d:\\dev\\vim\\font.cpp", "d:\\dev\\vim\\vim.cpp", "d:\\dev\\vim\\keys.cpp"]
 
 [MainWindow]
-X = 0
+X = 94
 Y = 19
 Width = 1801
 Height = 894
-ShowKind = "Normal"
+ShowKind = "ShowMaximized"
 
 [MainDockingFrame]
 Type = "DockingFrame"
@@ -26,6 +26,7 @@ Type = "TabbedView"
 [[MainDockingFrame.DockedWidgets.Tabs]]
 TabLabel = "keys.c"
 TabWidth = 63.58779
+TabIsPinned = false
 Type = "SourceViewPanel"
 FilePath = "d:\\dev\\vim\\keys.c"
 CursorPos = 4988
@@ -34,6 +35,7 @@ VertPos = 1826.0
 [[MainDockingFrame.DockedWidgets.Tabs]]
 TabLabel = "font.c"
 TabWidth = 62.82443
+TabIsPinned = false
 Type = "SourceViewPanel"
 FilePath = "d:\\dev\\vim\\font.c"
 CursorPos = 1258
@@ -42,14 +44,16 @@ CursorPos = 1258
 Active = true
 TabLabel = "vim.c"
 TabWidth = 59.771
+TabIsPinned = false
 Type = "SourceViewPanel"
 FilePath = "d:\\dev\\vim\\vim.c"
-CursorPos = 13260
-VertPos = 9870.0
+CursorPos = 9772
+VertPos = 7644.0
 
 [[MainDockingFrame.DockedWidgets.Tabs]]
 TabLabel = "util.c"
 TabWidth = 57.48092
+TabIsPinned = false
 Type = "SourceViewPanel"
 FilePath = "d:\\dev\\vim\\util.c"
 CursorPos = 5678
@@ -57,6 +61,7 @@ CursorPos = 5678
 [[MainDockingFrame.DockedWidgets.Tabs]]
 TabLabel = "motions.c"
 TabWidth = 86.48856
+TabIsPinned = false
 Type = "SourceViewPanel"
 FilePath = "d:\\dev\\vim\\motions.c"
 CursorPos = 757
@@ -76,12 +81,14 @@ Type = "TabbedView"
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 TabLabel = "Output"
 TabWidth = 91.98473
+TabIsPinned = false
 Type = "OutputPanel"
 
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 Active = true
 TabLabel = "Watch"
 TabWidth = 87.40459
+TabIsPinned = false
 Type = "WatchPanel"
 Columns = [{Width = 231.0}, {Width = 682.0}, {Width = 227.0}]
 Items = ["cwd", "argv", "argc", ""]
@@ -89,12 +96,14 @@ Items = ["cwd", "argv", "argc", ""]
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 TabLabel = "Auto"
 TabWidth = 78.24428
+TabIsPinned = false
 Type = "AutoWatchPanel"
 Columns = [{Width = 227.0}, {Width = 274.0}, {Width = 227.0}]
 
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 TabLabel = "Memory"
 TabWidth = 98.09161
+TabIsPinned = false
 Type = "MemoryPanel"
 AutoResize = "Auto_Mul8"
 RequestedWidth = 198.0
@@ -108,31 +117,44 @@ Type = "TabbedView"
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 TabLabel = "Threads"
 TabWidth = 95.80153
+TabIsPinned = false
 Type = "ThreadPanel"
 
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 TabLabel = "Call Stack"
 TabWidth = 105.7252
+TabIsPinned = false
 Type = "CallStackPanel"
 
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 TabLabel = "Immediate"
 TabWidth = 112.5954
+TabIsPinned = false
 Type = "ImmediatePanel"
 
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 Active = true
 TabLabel = "Breakpoints"
 TabWidth = 117.9389
+TabIsPinned = false
 Type = "BreakpointPanel"
 
 [[Breakpoints]]
 File = "d:\\dev\\vim\\vim.c"
 Line = 484
-Column = 0
+Column = 4
 
 [[BookmarkFolders]]
 Title = ""
+
+[OutputFilters]
+ModuleLoadMessages = false
+ModuleUnloadMessages = false
+ProcessExitMessages = false
+ThreadCreateMessages = false
+ThreadExitMessages = false
+SymbolLoadMessages = false
+ProgramOutput = false
 
 [DebugSession]
 FileVersion = 1

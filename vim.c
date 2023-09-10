@@ -17,7 +17,8 @@ typedef enum Vim_Mode
     VIM_CHANGE
 } Vim_Mode;
 
-typedef struct Vim_Range {
+typedef struct Vim_Range
+{
     u64 start_x, start_y;
     u64 end_x, end_y;
 } Vim_Range;
@@ -27,12 +28,14 @@ typedef struct Vim_Instance
     SDL_Window   *window;
     SDL_Renderer *renderer;
     
+    int scale;
+    
     Vim_Range range;
     
     bool should_change; // More info for VIM_CHANGE. should we change or just delete
     
     Vim_Mode mode;
-    char eat_input;
+    char eat_input; // An input to be eaten next time you type a char in.
     
     Font font;
     
@@ -55,15 +58,16 @@ typedef struct Vim_Instance
     bool closed;
 } Vim_Instance;
 
+// TODO: Move these to a separate file?
 void vim_init_line(String *string);
-void vim_init_lines(Vim_Instance *vim);
+void vim_allocate_and_init_lines(Vim_Instance *vim);
 void vim_reallocate_lines(Vim_Instance *vim);
 void vim_mode(Vim_Instance *vim, Vim_Mode mode);
 void vim_eat_input(Vim_Instance *vim, char ch);
 Vim_Range vim_fix_range(Vim_Range range);
 void vim_backspace_command_char(Vim_Instance *vim);
 void vim_write_lines_to_file(String filename, String *lines, u64 line_count);
-u64 vim_read_file_to_lines(String filename, Vim_Instance *vim);
+u64 vim_read_file_to_lines(Vim_Instance *vim, String filename);
 void vim_execute_command(Vim_Instance *vim);
 void vim_center_screen(Vim_Instance *vim);
 void vim_set_yoff(Vim_Instance *vim);
@@ -77,7 +81,9 @@ void vim_init_line(String *string) {
     string->buffer   = (char*)allocate(string->capacity);
 }
 
-void vim_init_lines(Vim_Instance *vim) {
+void vim_allocate_and_init_lines(Vim_Instance *vim) {
+    assert(vim->lines == nullptr); // lines should be unallocated before calling.
+    
     vim->line_count = 1;
     vim->line_capacity = 64;
     vim->lines = (String*)allocate(vim->line_capacity * sizeof(String));
@@ -87,7 +93,11 @@ void vim_init_lines(Vim_Instance *vim) {
         vim_init_line(&vim->lines[i]);
     }
     
-    vim->command_line = make_string(SHORT_STRING_CAPACITY);
+    if (!vim->command_line.buffer) {
+        vim->command_line = make_string(SHORT_STRING_CAPACITY);
+    } else {
+        string_clear(&vim->command_line);
+    }
 }
 
 void vim_reallocate_lines(Vim_Instance *vim) {
@@ -137,8 +147,10 @@ void vim_write_lines_to_file(String filename, String *lines, u64 line_count) {
     }
     
     File file = open_file(filename, FILE_WRITE);
-    write_to_file(file, full_out);
-    close_file(file);
+    if (!file.invalid) {
+        write_to_file(file, full_out);
+        close_file(file);
+    }
 }
 
 void vim_type_string(Vim_Instance *vim, String str) {
@@ -165,7 +177,7 @@ void vim_type_string(Vim_Instance *vim, String str) {
     }
 }
 
-u64 vim_read_file_to_lines(String filename, Vim_Instance *vim) {
+u64 vim_read_file_to_lines(Vim_Instance *vim, String filename) {
     File file = open_file(filename, FILE_READ);
     if (file.invalid) {
         return 0;
@@ -180,15 +192,52 @@ u64 vim_read_file_to_lines(String filename, Vim_Instance *vim) {
     return vim->line_count;
 }
 
+void vim_deallocate_lines(Vim_Instance *vim) {
+    vim->range = (Vim_Range){0};
+    vim->mode = VIM_NORMAL;
+    
+    free(vim->lines);
+    vim->lines = nullptr;
+    
+    vim->x = 0;
+    vim->y = 0;
+    vim->stored_x = 0;
+    vim->stored_y = 0;
+    
+    vim->xoff = vim->yoff = vim->yoff_to = 0;
+}
+
 void vim_execute_command(Vim_Instance *vim) {
     if (string_compare(vim->command_line, cs(":q"))) {
         vim->closed = true;
-    } else if (string_compare(vim->command_line, cs(":w"))) {
+    }
+    
+    else if (string_compare(vim->command_line, cs(":w"))) {
         vim_write_lines_to_file(vim->filename, vim->lines, vim->line_count);
-        string_copy(&vim->command_line, cs("Successfuly written to out.txt"));
-    } else if (string_compare(vim->command_line, cs(":wq"))) {
+        
+        string_clear(&vim->command_line);
+        string_append(&vim->command_line, cs("Wrote to "));
+        string_append(&vim->command_line, vim->filename);
+    }
+    
+    else if (string_compare(vim->command_line, cs(":wq"))) {
         vim_write_lines_to_file(vim->filename, vim->lines, vim->line_count);
         vim->closed = true;
+    }
+    
+    else if (string_starts_with(vim->command_line, cs(":e "))) {
+        u64 length = sizeof(":e ")-1;
+        
+        // ":e font.c"
+        
+        String new_file = string_slice_duplicate(vim->command_line, length, vim->command_line.length-1);
+        
+        vim_deallocate_lines(vim);
+        vim_allocate_and_init_lines(vim);
+        
+        vim_read_file_to_lines(vim, new_file);
+        
+        free_string(&new_file);
     }
 }
 
@@ -365,31 +414,27 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
     
-    const int scale = 2;
+    vim->scale = 2;
     
     vim->w = vim->h = 400;
     
-    //vim->argc = argc;
-    //vim->argv = argv;
+    vim->argc = argc;
+    vim->argv = argv;
     
     String filename = {0};
     
     if (argc == 2) {
         filename = as_string(argv[1]);
-        if (!file_exists(filename)) {
-            // TODO: Output error: file not found
-            ExitProcess(1);
-        }
     } else {
-        // TODO: Output usage using MessageBox?
+        print(cs("Usage: vim <file>\n"));
         ExitProcess(1);
     }
     
     vim->window = SDL_CreateWindow("vim",
                                    SDL_WINDOWPOS_CENTERED,
                                    SDL_WINDOWPOS_CENTERED,
-                                   vim->w*scale,
-                                   vim->h*scale,
+                                   vim->w*vim->scale,
+                                   vim->h*vim->scale,
                                    SDL_WINDOW_RESIZABLE);
     vim->renderer = SDL_CreateRenderer(vim->window, -1, SDL_RENDERER_SOFTWARE);
     
@@ -398,8 +443,8 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     vim->font = make_font(vim->renderer, "font.png", 8, 13);
     vim->filename = filename;
     
-    vim_init_lines(vim);
-    vim_read_file_to_lines(vim->filename, vim);
+    vim_allocate_and_init_lines(vim);
+    vim_read_file_to_lines(vim, vim->filename);
 }
 
 void vim_deinit(Vim_Instance *vim) {
@@ -437,9 +482,8 @@ void vim_handle_event(Vim_Instance *vim, SDL_Event *event) {
         } break;
         case SDL_WINDOWEVENT: {
             if (event->window.event == SDL_WINDOWEVENT_RESIZED) {
-                const int scale = 2;
-                vim->w = event->window.data1 / scale;
-                vim->h = event->window.data2 / scale;
+                vim->w = event->window.data1 / vim->scale;
+                vim->h = event->window.data2 / vim->scale;
                 
                 SDL_RenderSetLogicalSize(vim->renderer, vim->w, vim->h);
             }
@@ -476,7 +520,7 @@ void vim_draw(Vim_Instance *vim) {
     SDL_RenderPresent(render);
 }
 
-void main() {
+int main() {
     Vim_Instance vim = {0};
     
     win32_SetProcessDpiAware();

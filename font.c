@@ -16,16 +16,14 @@ Font make_font(SDL_Renderer *render, const char *font, int w, int h) {
     
     SDL_Surface *surf = IMG_Load(font);
     if (!surf) {
-        const char *str = SDL_GetError();
-        u64 length = strlen(str);
-        print((String){ (char*)str, length, 0 });
+        char *str = (char*)SDL_GetError();
+        print(as_string(str));
     }
     
     result.texture = SDL_CreateTextureFromSurface(render, surf);
     if (!result.texture) {
-        const char *str = SDL_GetError();
-        u64 length = strlen(str);
-        print((String){ (char*)str, length, 0 });
+        char *str = (char*)SDL_GetError();
+        print(as_string(str));
     }
     
     result.texture_w = surf->w;

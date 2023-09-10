@@ -1,0 +1,41 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+typedef struct {
+    uint8_t *buffer;
+    uint8_t *cursor;
+    uint64_t size;
+} Arena;
+
+Arena make_arena(uint64_t size) {
+    Arena arena;
+
+    arena.size = size;
+    arena.buffer = calloc(arena.size, 1);
+    arena.cursor = arena.buffer;
+
+    return arena;
+}
+
+void free_arena(Arena arena) {
+    free(arena.buffer);
+}
+
+void *arena_alloc(Arena *arena, uint64 size) {
+    if (arena->cursor+size > arena->buffer+arena.size) return 0;
+
+    void *ptr = arena->cursor;
+    arena->cursor += size;
+    return ptr;
+}
+
+int main(void) {
+    Arena arena = make_arena(512);
+
+    uint64_t buf_size = 64;
+    char *buffer = arena_alloc(&arena, buf_size);
+    strncpy(buffer, "Hello!", buf_size);
+
+    free_arena(arena);
+}

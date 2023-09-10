@@ -1,0 +1,6 @@
+#include <stdio.h>
+
+int main(void) {
+    printf("What's up?");
+    return 0;
+}
