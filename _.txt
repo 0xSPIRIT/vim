@@ -2,11 +2,19 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-typedef struct {
+struct Arena {
     uint8_t *buffer;
     uint8_t *cursor;
     uint64_t size;
-} Arena;
+};
+
+void CopyString1(char *Destination, char *Source) {
+    for (int i = 0; Destination[i] = Source[i]; i++);
+}
+
+void CopyString2(char *Destination, char *Source) {
+    while (*Destination++ = *Source++);
+}
 
 Arena make_arena(uint64_t size) {
     Arena arena = {0};

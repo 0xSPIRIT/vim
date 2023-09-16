@@ -18,7 +18,7 @@ typedef u8 bool;
 
 #define assert(x) if(!(x)){__debugbreak();}
 
-// Replacements for stdlib functions
+// Replacements for crt functions
 
 #pragma function(memset)
 void *memset(void *dest, int ch, u64 count) {

@@ -3,6 +3,7 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
 #include "util.c"
 #include "font.c"
@@ -399,6 +400,10 @@ Vim_Range vim_fix_range(Vim_Range range) {
         u64 tx = range.end_x;
         range.end_x = range.start_x;
         range.start_x = tx;
+    } else if (range.start_y == range.end_y && range.end_x < range.start_x) {
+        u64 x = range.start_x;
+        range.start_x = range.end_x;
+        range.end_x = x+1;
     }
     return range;
 }
@@ -521,6 +526,7 @@ void vim_mode(Vim_Instance *vim, Vim_Mode mode) {
 void vim_init(Vim_Instance *vim, int argc, char **argv) {
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
+    TTF_Init();
     
     vim->scale = 1;
     
@@ -548,7 +554,7 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     
     SDL_RenderSetLogicalSize(vim->renderer, vim->w, vim->h);
     
-    vim->font = make_font(vim->renderer, "LiberationMono-Regular_atlas.png", 12, 21);
+    vim->font = make_font(vim->renderer, "C:/Windows/Fonts/consola.ttf", 20);
     
     vim->state_tail = vim->state_head = nullptr;
     
