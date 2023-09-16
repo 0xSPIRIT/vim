@@ -1,6 +1,48 @@
 #include <stdio.h>
+#include <stdlib.h>
+
+struct String {
+    char *buffer;
+    int length;
+    int capacity;
+};
+
+#define const_string(x) (String){ x, sizeof(x)-1, sizeof(x)-1 }
+
+String make_string(int capacity) {
+    String result;
+    result.buffer = malloc(capacity);
+    result.length = 0;
+    result.capacity = capacity;
+
+    return result;
+}
+
+void free_string(String string) {
+    free(string.buffer);
+}
+
+bool string_compare(String a, String b) {
+    if (a.length != b.length) return false;
+
+    for (int i = 0; i < a.length; i++) {
+        if (a.buffer[i] != b.buffer[i]) return false;
+    }
+
+    return true;
+}
 
 int main(void) {
-    printf("What's up?");
+    String a = cs("Test");
+    String b = cs("Test");
+
+    bool result = string_compare(a, b);
+
+    if (result) {
+        puts("Same!");
+    } else {
+        puts("Not the same!");
+    }
+
     return 0;
 }

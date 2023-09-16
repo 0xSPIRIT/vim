@@ -1,14 +1,14 @@
 FileVersion = 1
 LastConfig = "Debug"
 LastPlatform = "Win64"
-RecentFilesList = ["d:\\dev\\vim\\vim.c", "Disassembly", "d:\\dev\\vim\\util.c"]
+RecentFilesList = ["d:\\dev\\vim\\vim.c", "d:\\dev\\vim\\util.c", "d:\\dev\\vim\\keys.c", "d:\\dev\\vim\\motions.c", "Disassembly"]
 
 [MainWindow]
-X = 94
-Y = 19
+X = 79
+Y = 49
 Width = 1801
 Height = 894
-ShowKind = "ShowMaximized"
+ShowKind = "ShowNormal"
 
 [MainDockingFrame]
 Type = "DockingFrame"
@@ -24,32 +24,50 @@ DefaultDocumentsTabbedView = true
 Type = "TabbedView"
 
 [[MainDockingFrame.DockedWidgets.Tabs]]
+TabLabel = "motions.c"
+TabWidth = 86.48856
+TabIsPinned = false
+Type = "SourceViewPanel"
+FilePath = "d:\\dev\\vim\\motions.c"
+CursorPos = 1534
+VertPos = 5726.0
+
+[[MainDockingFrame.DockedWidgets.Tabs]]
+TabLabel = "keys.c"
+TabWidth = 63.58779
+TabIsPinned = false
+Type = "SourceViewPanel"
+FilePath = "d:\\dev\\vim\\keys.c"
+CursorPos = 7698
+VertPos = 630.0
+
+[[MainDockingFrame.DockedWidgets.Tabs]]
 TabLabel = "Disassembly"
-TabWidth = 109.9237
+TabWidth = 120.229
 TabIsPinned = false
 Type = "DisassemblyPanel"
 
 [[MainDockingFrame.DockedWidgets.Tabs]]
 TabLabel = "util.c"
-TabWidth = 67.17558
+TabWidth = 57.48092
 TabIsPinned = false
 Type = "SourceViewPanel"
 FilePath = "d:\\dev\\vim\\util.c"
-CursorPos = 6098
-VertPos = 4914.0
+CursorPos = 2560
+VertPos = 2289.0
 
 [[MainDockingFrame.DockedWidgets.Tabs]]
 Active = true
 TabLabel = "vim.c"
-TabWidth = 69.46565
+TabWidth = 59.771
 TabIsPinned = false
 Type = "SourceViewPanel"
 FilePath = "d:\\dev\\vim\\vim.c"
-CursorPos = 13670
-VertPos = 4431.0
+CursorPos = 7555
+VertPos = 5859.0
 
 [[MainDockingFrame.DockedWidgets]]
-RequestedWidth = 1005.0
+RequestedWidth = 718.0
 RequestedHeight = 152.0
 Type = "DockingFrame"
 SplitType = 2
@@ -61,19 +79,19 @@ SizePriority = 0.5801603
 Type = "TabbedView"
 
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
+Active = true
 TabLabel = "Output"
 TabWidth = 91.98473
 TabIsPinned = false
 Type = "OutputPanel"
 
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
-Active = true
 TabLabel = "Watch"
 TabWidth = 87.40459
 TabIsPinned = false
 Type = "WatchPanel"
 Columns = [{Width = 231.0}, {Width = 682.0}, {Width = 227.0}]
-Items = ["new_file", "string", ""]
+Items = ["search", "line", "line_offset", ""]
 
 [[MainDockingFrame.DockedWidgets.DockedWidgets.Tabs]]
 TabLabel = "Auto"

@@ -60,6 +60,24 @@ void vim_right(Vim_Instance *vim) {
     vim_clamp_cursor(vim, vim->mode);
 }
 
+void vim_left_wrap(Vim_Instance *vim) {
+    vim->x--;
+    if (vim->x < 0) {
+        vim->y--;
+        if (vim->y >= 0) vim->x = max(0, (int)vim->lines[vim->y].length-1);
+    }
+    vim_clamp_cursor(vim, vim->mode);
+}
+
+void vim_right_wrap(Vim_Instance *vim) {
+    vim->x++;
+    if (vim->x >= vim->lines[vim->y].length) {
+        vim->y++;
+        vim->x = 0;
+    }
+    vim_clamp_cursor(vim, vim->mode);
+}
+
 bool vim_is_line_empty(String line) {
     if (line.length == 0) return true;
     
@@ -108,6 +126,8 @@ void vim_move_end_word(Vim_Instance *vim) {
     
     while (vim->x < line->length-1 && line->buffer[vim->x+1] == ' ') vim->x++;
     while (vim->x < line->length-1 && line->buffer[vim->x+1] != ' ') vim->x++;
+    
+    vim_clamp_cursor(vim, vim->mode);
 }
 
 void vim_move_to_first_non_whitespace(Vim_Instance *vim) {
@@ -227,10 +247,14 @@ void vim_delete_range_line_based(Vim_Instance *vim, int start_y, int end_y) {
         end_y = temp;
     }
     
+    int stored_y = start_y;
+        
     int count = end_y - start_y + 1;
     
     for (int i = 0; i < count; i++)
         vim_delete_line(vim, start_y);
+    
+    vim->y = stored_y;
 }
 
 void vim_delete_range(Vim_Instance *vim, Vim_Range range) {
@@ -309,4 +333,14 @@ void vim_delete_end_of_line(Vim_Instance *vim) {
     vim_end_of_line(vim);
     vim_range_end(vim);
     vim_delete_range(vim, vim->range);
+}
+
+int vim_find(Vim_Instance *vim, char ch) {
+    String *line = &vim->lines[vim->y];
+
+    for (int x = vim->x+1; x < (int)line->length; x++) {
+        if (line->buffer[x] == ch) return x;
+    }
+    
+    return vim->x;
 }

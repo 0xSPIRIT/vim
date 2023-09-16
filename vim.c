@@ -14,7 +14,9 @@ typedef enum Vim_Mode
     VIM_VISUAL,
     VIM_COMMAND,
     VIM_REPLACE,
-    VIM_CHANGE
+    VIM_CHANGE,
+    VIM_FIND,
+    VIM_SEARCH
 } Vim_Mode;
 
 typedef struct Vim_Range
@@ -24,6 +26,14 @@ typedef struct Vim_Range
     bool line_based;
 } Vim_Range;
 
+typedef struct Vim_Search
+{
+    char *string;
+    int sx, sy;
+    int x, y;
+    bool backwards;
+} Vim_Search;
+
 typedef struct Vim_Instance
 {
     SDL_Window   *window;
@@ -32,6 +42,7 @@ typedef struct Vim_Instance
     int scale;
     
     Vim_Range range;
+    Vim_Search search;
     
     bool should_change; // More info for VIM_CHANGE. should we change or just delete
     
@@ -45,6 +56,8 @@ typedef struct Vim_Instance
     u64 line_count, line_capacity;
     
     String command_line;
+    
+    struct Save_State *state_tail, *state_head;
     
     int    argc;
     char **argv;
@@ -72,7 +85,10 @@ u64 vim_read_file_to_lines(Vim_Instance *vim, String filename);
 void vim_execute_command(Vim_Instance *vim);
 void vim_center_screen(Vim_Instance *vim);
 void vim_set_yoff(Vim_Instance *vim);
+bool vim_search(Vim_Instance *vim, Vim_Search *search);
+bool is_thing_offscreen(int yoff, int thing_y, int thing_h, int screen_h);
 
+#include "save.c"
 #include "motions.c"
 #include "keys.c"
 
@@ -266,6 +282,72 @@ void vim_set_yoff(Vim_Instance *vim) {
     vim->yoff = vim->yoff_to;
 }
 
+bool vim_is_eof(Vim_Instance *vim, int y) {
+    return (y > vim->line_count-1);
+}
+
+bool _vim_search_forward(Vim_Instance *vim, Vim_Search *search) {
+    search->x = search->sx;
+    search->y = search->sy;
+    
+    String search_for = as_string(search->string);
+    
+    while (!vim_is_eof(vim, search->y)) {
+        String *line = &vim->lines[search->y];
+        
+        if (line->length > 0) {
+            for (int i = search->x; i <= (int)line->length - (int)search_for.length; i++) {
+                String line_offset = (String){ line->buffer+i, search_for.length, line->capacity-i };
+                if (string_compare_case_insensitive(search_for, line_offset)) {
+                    search->x = i;
+                    return true; // Found!
+                }
+            }
+        }
+        
+        search->y++;
+        search->x = 0;
+    }
+    
+    return false;
+}
+
+bool _vim_search_backward(Vim_Instance *vim, Vim_Search *search) {
+    search->x = search->sx;
+    search->y = search->sy;
+    
+    String search_for = as_string(search->string);
+    
+    while (search->x != 0 || search->y != 0) {
+        String *line = &vim->lines[search->y];
+        
+        if (line->length > 0) {
+            for (int i = search->x; i >= 0; i--) {
+                String line_offset = (String){ line->buffer+i, search_for.length, line->capacity-i };
+                if (string_compare(search_for, line_offset)) {
+                    search->x = i;
+                    return true;
+                }
+            }
+        }
+        
+        search->y--;
+        if (search->y < 0) break;
+        
+        search->x = max(0, (int)vim->lines[search->y].length - 1);
+    }
+    
+    return false;
+}
+
+bool vim_search(Vim_Instance *vim, Vim_Search *search) {
+    if (search->backwards) {
+        return _vim_search_backward(vim, search);
+    } else {
+        return _vim_search_forward(vim, search);
+    }
+}
+
 void vim_draw_cursor(SDL_Renderer *render, Vim_Instance *vim) {
     Font *font = &vim->font;
     
@@ -297,11 +379,11 @@ void vim_draw_cursor(SDL_Renderer *render, Vim_Instance *vim) {
             SDL_Rect rect = { x * fw, y * fh + dy, 2, fh };
             SDL_RenderFillRect(render, &rect);
         } break;
-        case VIM_COMMAND: {
+        case VIM_SEARCH: case VIM_COMMAND: {
             SDL_Rect rect = { x * fw, vim->h - fh, 2, fh };
             SDL_RenderFillRect(render, &rect);
         } break;
-        case VIM_CHANGE: case VIM_REPLACE: {
+        case VIM_FIND: case VIM_CHANGE: case VIM_REPLACE: {
             SDL_Rect rect = { x * fw, y * fh + 3*fh/4 + dy, fw, fh/4 };
             SDL_RenderFillRect(render, &rect);
         } break;
@@ -406,18 +488,29 @@ void vim_eat_input(Vim_Instance *vim, char ch) {
 void vim_mode(Vim_Instance *vim, Vim_Mode mode) {
     if (vim->mode == mode) return;
     
+    vim_save_state(vim);
+     
     if (vim->mode == VIM_COMMAND) {
         vim->x = vim->stored_x;
         vim->y = vim->stored_y;
     }
+    if (vim->mode == VIM_SEARCH) {
+        vim->x = vim->search.x;
+        vim->y = vim->search.y;
+    }
     
     vim->mode = mode;
     
-    if (mode == VIM_COMMAND) {
+    if (mode == VIM_COMMAND || vim->mode == VIM_SEARCH) {
         vim->stored_x = vim->x;
         vim->stored_y = vim->y;
+        vim->search.sx = vim->x;
+        vim->search.sy = vim->y;
         vim->x = 0;
         string_clear(&vim->command_line);
+        
+        vim->search.string = vim->command_line.buffer+1;
+        vim->search.backwards = false;
     } else if (mode == VIM_CHANGE) {
         vim_range_start(vim, false);
     }
@@ -431,8 +524,8 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     
     vim->scale = 1;
     
-    vim->w = 1000;
-    vim->h = 700;
+    vim->w = 2*600;
+    vim->h = 2*400;
     
     vim->argc = argc;
     vim->argv = argv;
@@ -455,7 +548,9 @@ void vim_init(Vim_Instance *vim, int argc, char **argv) {
     
     SDL_RenderSetLogicalSize(vim->renderer, vim->w, vim->h);
     
-    vim->font = make_font(vim->renderer, "consola_atlas.png", 14, 25);
+    vim->font = make_font(vim->renderer, "LiberationMono-Regular_atlas.png", 12, 21);
+    
+    vim->state_tail = vim->state_head = nullptr;
     
     vim_allocate_and_init_lines(vim);
     vim_read_file_to_lines(vim, vim->filename);
@@ -485,9 +580,12 @@ void vim_handle_event(Vim_Instance *vim, SDL_Event *event) {
                 break;
             }
             
-            if (vim->mode == VIM_INSERT) {
+            if (vim->mode == VIM_FIND) {
+                vim->x = vim_find(vim, ch);
+                vim_mode(vim, VIM_NORMAL);
+            } else if (vim->mode == VIM_INSERT) {
                 vim_type_char(vim, ch);
-            } else if (vim->mode == VIM_COMMAND) {
+            } else if (vim->mode == VIM_COMMAND || vim->mode == VIM_SEARCH) {
                 vim_type_command_char(vim, ch);
             } else if (vim->mode == VIM_REPLACE) {
                 vim_replace_char(vim, ch);
@@ -534,7 +632,7 @@ void vim_draw(Vim_Instance *vim) {
     SDL_RenderPresent(render);
 }
 
-int main() {
+int main(void) {
     Vim_Instance vim = {0};
    
     win32_SetProcessDpiAware();
@@ -545,21 +643,20 @@ int main() {
     
     GetCurrentDirectory(MAX_PATH, cwd);
     
-    int argc;
-    char **argv;
+    int argc = 0;
+    char **argv = 0;
     get_command_line_args(&argc, &argv);
     
     vim_init(&vim, argc, argv);
     
     while (!vim.closed) {
         SDL_Event event;
-        while (SDL_PollEvent(&event)) {
+        while (!vim.closed && SDL_WaitEvent(&event)) {
             vim_handle_event(&vim, &event);
+            vim_draw(&vim);
         }
-        vim_draw(&vim);
     }
     
     vim_deinit(&vim);
-    
     ExitProcess(0);
 }

@@ -41,6 +41,17 @@ u64 strlen(const char *string) {
     return result;
 }
 
+inline char lowercase(char ch) {
+    if (ch >= 'A' && ch <= 'Z') return ch-'A'+'a';
+    return ch;
+}
+
+inline int clamp(int a, int min, int max) {
+    if (a < min) return min;
+    if (a > max) return max;
+    return a;
+}
+
 // Allocator
 
 HANDLE process_heap = 0;
@@ -113,6 +124,15 @@ char *as_c_string(String str) {
     return result;
 }
 
+bool string_compare_case_insensitive(String a, String b) {
+    if (a.length != b.length) return false;
+    
+    for (u64 i = 0; i < a.length; i++)
+        if (lowercase(a.buffer[i]) != lowercase(b.buffer[i])) return false;
+    
+    return true;
+}
+
 bool string_compare(String a, String b) {
     if (a.length != b.length) return false;
     
@@ -142,6 +162,12 @@ void string_copy(String *dst, String src) {
     }
     
     dst->length = src.length;
+}
+
+String string_duplicate(String src) {
+    String result = make_string(src.length);
+    string_copy(&result, src);
+    return result;
 }
 
 String string_slice_duplicate(String src, u64 start_index, u64 end_index) {
@@ -220,6 +246,28 @@ void string_delete_range(String *str, u64 start, u64 end) {
     }
 }
 
+String int_to_string(int number) {
+    String result = make_string(64);
+    
+    int base = 10;
+    
+    int x = number;
+    while (x) {
+        x /= base;
+        result.length++;
+    }
+    x = number;
+    
+    u64 index = result.length-1;
+    while (x) {
+        int value = x % base;
+        x /= base;
+        result.buffer[index--] = (char)value + '0';
+    }
+    
+    return result;
+}
+
 // Standard Output
 
 HANDLE stdout;
@@ -230,6 +278,60 @@ void stdout_init() {
 
 void print(String string) {
     WriteFile(stdout, string.buffer, (DWORD)string.length, 0, 0);
+}
+
+void base_format(String format, String *out, va_list list) {
+    assert(out);
+    assert(out->buffer);
+    
+    for (int i = 0; i < format.length; i++) {
+        char ch = format.buffer[i];
+        
+        if (ch == '%' && i < format.length-1) {
+            char type = format.buffer[++i];
+            
+            switch (type) {
+                case '%': { string_append_char(out, '%'); } break;
+                case 'd': {
+                    int arg = va_arg(list, int);
+                    String str = int_to_string(arg);
+                    string_append(out, str);
+                    free_string(&str);
+                } break;
+                case 's': {
+                    String arg = va_arg(list, String);
+                    string_append(out, arg);
+                } break;
+                case 'c': {
+                    char arg = va_arg(list, char);
+                    string_append_char(out, arg);
+                } break;
+            }
+        } else {
+            string_append_char(out, ch);
+        }
+    }
+}
+
+void string_format(String format, String *out, ...) {
+    va_list list;
+    va_start(list, out);
+    
+    base_format(format, out, list);
+    
+    va_end(list);
+}
+
+void print_format(String format, ...) {
+    va_list list;
+    va_start(list, format);
+    
+    String out = make_string(64);
+    base_format(format, &out, list);
+    
+    print(out);
+    
+    va_end(list);
 }
 
 // File Stuff
